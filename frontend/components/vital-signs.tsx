@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { VitalSign } from "@/types/patient"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
 interface VitalSignsProps {
   vitalSigns: VitalSign[]
@@ -14,8 +14,6 @@ export default function VitalSigns({ vitalSigns }: VitalSignsProps) {
   const formattedData = vitalSigns.map((vs) => ({
     ...vs,
     formattedDate: new Date(vs.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    systolic: Number.parseInt(vs.bloodPressure.split("/")[0]),
-    diastolic: Number.parseInt(vs.bloodPressure.split("/")[1]),
   }))
 
   // Get the most recent vital signs
@@ -112,41 +110,8 @@ export default function VitalSigns({ vitalSigns }: VitalSignsProps) {
         <TabsContent value="bloodPressure">
           <Card className="bg-gray-800/60 backdrop-blur-sm border-gray-700/50">
             <CardContent className="pt-6">
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={formattedData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                    <XAxis dataKey="formattedDate" stroke="#aaa" />
-                    <YAxis stroke="#aaa" domain={[60, 160]} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "rgba(51, 51, 51, 0.8)",
-                        backdropFilter: "blur(8px)",
-                        border: "1px solid rgba(85, 85, 85, 0.5)",
-                      }}
-                      labelStyle={{ color: "#fff" }}
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="systolic"
-                      stroke="#ef4444"
-                      strokeWidth={2}
-                      dot={{ r: 4, strokeWidth: 2 }}
-                      activeDot={{ r: 6, strokeWidth: 2 }}
-                      name="Systolic"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="diastolic"
-                      stroke="#3b82f6"
-                      strokeWidth={2}
-                      dot={{ r: 4, strokeWidth: 2 }}
-                      activeDot={{ r: 6, strokeWidth: 2 }}
-                      name="Diastolic"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+              <div className="h-[300px] flex items-center justify-center">
+                <p className="text-gray-500">Blood pressure chart visualization would go here</p>
               </div>
             </CardContent>
           </Card>
@@ -155,30 +120,8 @@ export default function VitalSigns({ vitalSigns }: VitalSignsProps) {
         <TabsContent value="temperature">
           <Card className="bg-gray-800/60 backdrop-blur-sm border-gray-700/50">
             <CardContent className="pt-6">
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={formattedData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                    <XAxis dataKey="formattedDate" stroke="#aaa" />
-                    <YAxis stroke="#aaa" domain={[97, 100]} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "rgba(51, 51, 51, 0.8)",
-                        backdropFilter: "blur(8px)",
-                        border: "1px solid rgba(85, 85, 85, 0.5)",
-                      }}
-                      labelStyle={{ color: "#fff" }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="temperature"
-                      stroke="#fbbf24"
-                      strokeWidth={2}
-                      dot={{ r: 4, strokeWidth: 2 }}
-                      activeDot={{ r: 6, strokeWidth: 2 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+              <div className="h-[300px] flex items-center justify-center">
+                <p className="text-gray-500">Temperature chart visualization would go here</p>
               </div>
             </CardContent>
           </Card>
