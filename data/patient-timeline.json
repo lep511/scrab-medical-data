@@ -1,0 +1,41 @@
+[
+    {
+        "year":"2023",
+        "title":"Cardiac Assessment",
+        "description":"Comprehensive cardiac evaluation revealed normal heart function with minor irregularities in rhythm. Prescribed beta blockers for management.",
+        "icon":"HeartPulse",
+        "highlight":true
+    },
+    {
+        "year":"2022",
+        "title":"Type 2 Diabetes Diagnosis",
+        "description":"Initial diagnosis of Type 2 Diabetes. Started on Metformin 500mg twice daily. Implemented lifestyle modifications and dietary changes.",
+        "icon":"Activity"
+    },
+    {
+        "year":"2021",
+        "title":"Annual Physical",
+        "description":"Regular check-up showed elevated blood pressure (140/90). Recommended lifestyle changes and monthly monitoring.",
+        "icon":"Stethoscope"
+    },
+    {
+        "year":"2020",
+        "title":"COVID-19 Vaccination",
+        "description":"Received complete COVID-19 vaccination series. No adverse reactions reported. Follow-up booster scheduled.",
+        "icon":"Syringe",
+        "highlight":true
+    },
+    {
+        "year":"2019",
+        "title":"Medication Review",
+        "description":"Comprehensive medication review. Adjusted dosages for better management of chronic conditions.",
+        "icon":"Pill"
+    },
+    {
+        "year":"2018",
+        "title":"Hospital Admission",
+        "description":"Brief hospital stay due to severe pneumonia. Full recovery achieved after antibiotic treatment.",
+        "icon":"Hospital"
+    }
+]
+
