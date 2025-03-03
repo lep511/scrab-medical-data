@@ -54,3 +54,4 @@ export interface TimelineEvent {
   icon: string
   highlight?: boolean
 }
+
