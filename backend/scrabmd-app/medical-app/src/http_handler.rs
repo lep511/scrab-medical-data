@@ -1,6 +1,7 @@
-use lambda_http::{Body, Error, Request, Response};
+use lambda_http::{Body, Request, Error, Response};
 use lambda_http::tracing::{error, info};
-use crate::libs::CDSHooksResponse;
+use crate::libs::{HookResponse, BundleEntry};
+use crate::scrab_errors::ScrabError;
 use serde_json::json;
 use std::env;
 
@@ -37,7 +38,7 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         .map_err(Box::new)?)
 }
 
-fn handle_discovery() -> Result<Body, Error> {
+fn handle_discovery() -> Result<Body, ScrabError> {
     let body = json!({ 
         "services": [
             {
@@ -59,7 +60,7 @@ fn handle_discovery() -> Result<Body, Error> {
 fn handle_patient_view(
     hook_data: &Body, 
     smart_app_uri: &str,
-) -> Result<Body, Error> {
+) -> Result<Body, ScrabError> {
     
     let body_str = match hook_data {
         Body::Text(body) => body,
@@ -69,15 +70,9 @@ fn handle_patient_view(
         }
     };
 
-    let cds_response: CDSHooksResponse = match serde_json::from_str(body_str) {
-        Ok(data) => data,
-        Err(error) => {
-            error!("[E0994] Error parsing body: {:?}", error);
-            return handle_error();
-        }
-    };
+    let response: HookResponse = parse_hook_response(body_str)?;
 
-    let names: (String, String) = match extract_patient_name(&cds_response) {
+    let names: (String, String) = match extract_patient_name(&response) {
         Some(names) => names,
         None => {
             error!("[E0995] Error extracting patient name.");
@@ -90,6 +85,17 @@ fn handle_patient_view(
         names.0,
         names.1
     );
+
+    let conditions: &Vec<BundleEntry>  = &response
+        .prefetch
+        .unwrap_or_default()
+        .conditions
+        .unwrap_or_default()
+        .entry
+        .unwrap_or_default();
+
+    let condition = &conditions[0];
+    println!("Condition: {:?}", condition);
 
     let body = json!({ 
         "cards": [
@@ -126,7 +132,7 @@ fn handle_patient_view(
     Ok(Body::Text(body.to_string()))
 }
 
-fn extract_patient_name(response: &CDSHooksResponse) -> Option<(String, String)> {
+fn extract_patient_name(response: &HookResponse) -> Option<(String, String)> {
     if let Some(prefetch) = &response.prefetch {
         if let Some(patient) = &prefetch.patient {
             if let Some(names) = &patient.name {
@@ -143,7 +149,7 @@ fn extract_patient_name(response: &CDSHooksResponse) -> Option<(String, String)>
     None
 }
 
-fn handle_error() -> Result<Body, Error> {
+fn handle_error() -> Result<Body, ScrabError> {
        
     let body = json!({ 
         "cards": [
@@ -158,4 +164,15 @@ fn handle_error() -> Result<Body, Error> {
     });
 
     Ok(Body::Text(body.to_string()))
+}
+
+/// Helper function to parse JSON string into HookResponse
+pub fn parse_hook_response(json_str: &str) -> Result<HookResponse, ScrabError> {
+    match serde_json::from_str(json_str) {
+        Ok(response) => Ok(response),
+        Err(error) => {
+            error!("Error parsing HookResponse: {:?}", error);
+            Err(ScrabError::InvalidJson("Error to convert json".to_string()))
+        }
+    }
 }

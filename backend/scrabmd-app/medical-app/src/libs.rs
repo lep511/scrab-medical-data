@@ -1,35 +1,37 @@
+use serde_json::Value;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct CDSHooksResponse {
-    #[serde(rename = "hookInstance")]
+/// Root struct for the hook response
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HookResponse {
     pub hook_instance: Option<String>,
     pub hook: Option<String>,
-    #[serde(rename = "fhirServer")]
     pub fhir_server: Option<String>,
     pub context: Option<Context>,
     pub prefetch: Option<Prefetch>,
-    #[serde(rename = "fhirAuthorization")]
-    pub fhir_authorization: Option<serde_json::Value>,
+    pub fhir_authorization: Option<Value>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Context of the hook
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Context {
-    #[serde(rename = "patientId")]
     pub patient_id: Option<String>,
-    #[serde(rename = "userId")]
     pub user_id: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Prefetch data included in the response
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Prefetch {
     pub conditions: Option<Bundle>,
     pub patient: Option<Patient>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Bundle of resources (e.g., conditions)
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Bundle {
-    #[serde(rename = "resourceType")]
     pub resource_type: Option<String>,
     #[serde(rename = "type")]
     pub bundle_type: Option<String>,
@@ -38,96 +40,105 @@ pub struct Bundle {
     pub entry: Option<Vec<BundleEntry>>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Link within a bundle
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Link {
     pub relation: Option<String>,
     pub url: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Entry in a bundle
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BundleEntry {
-    #[serde(rename = "fullUrl")]
     pub full_url: Option<String>,
     pub resource: Option<Resource>,
     pub response: Option<EntryResponse>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// EntryResponse metadata for an entry
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct EntryResponse {
     pub status: Option<String>,
-    #[serde(rename = "lastModified")]
     pub last_modified: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Resource condition
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Resource {
-    #[serde(rename = "resourceType")]
     pub resource_type: Option<String>,
     pub id: Option<String>,
     pub meta: Option<Meta>,
     pub identifier: Option<Vec<Identifier>>,
-    #[serde(rename = "clinicalStatus")]
     pub clinical_status: Option<CodingWrapper>,
-    #[serde(rename = "verificationStatus")]
     pub verification_status: Option<CodingWrapper>,
     pub category: Option<Vec<CodingWrapper>>,
     pub code: Option<CodeableConcept>,
     pub subject: Option<Reference>,
-    #[serde(rename = "onsetDateTime", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub onset_date_time: Option<String>,
-    #[serde(rename = "onsetPeriod", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub onset_period: Option<Period>,
-    #[serde(rename = "abatementDateTime", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub abatement_date_time: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Metadata for a resource
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Meta {
-    #[serde(rename = "versionId")]
     pub version_id: Option<String>,
-    #[serde(rename = "lastUpdated")]
     pub last_updated: Option<String>,
     pub profile: Vec<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Identifier for a resource
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Identifier {
     pub system: Option<String>,
     pub value: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// CodingWrapper concept (e.g., coded values with text)
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct CodingWrapper {
     pub coding: Option<Vec<Coding>>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Coding within a codeable concept
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Coding {
     pub system: Option<String>,
     pub code: Option<String>,
     pub display: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// CodeableConcept 
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct CodeableConcept {
     pub coding: Option<Vec<Coding>>,
     pub text: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Reference to another resource
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Reference {
     pub reference: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Period represents a time period with optional start and end timestamps
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Period {
     pub start: Option<String>,
     pub end: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Patient resource
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Patient {
-    #[serde(rename = "resourceType")]
     pub resource_type: Option<String>,
     pub id: Option<String>,
     pub meta: Option<Meta>,
@@ -136,53 +147,51 @@ pub struct Patient {
     pub name: Option<Vec<HumanName>>,
     pub telecom: Option<Vec<ContactPoint>>,
     pub gender: Option<String>,
-    #[serde(rename = "birthDate")]
     pub birth_date: Option<String>,
     pub address: Option<Vec<Address>>,
-    pub communication: Option<Vec<Communication>>,
-    #[serde(rename = "managingOrganization")]
+    pub communication: Option<Vec<Value>>,
     pub managing_organization: Option<Reference>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Extension for additional data
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Extension {
     pub extension: Option<Vec<Extension>>,
     pub url: Option<String>,
-    #[serde(rename = "valueString", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub value_string: Option<String>,
-    #[serde(rename = "valueCode", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub value_code: Option<String>,
-    #[serde(rename = "valueCoding", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub value_coding: Option<Coding>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Human name
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct HumanName {
     pub family: Option<String>,
     pub given: Option<Vec<String>>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Contact point (e.g., phone, email)
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct ContactPoint {
     pub system: Option<String>,
     pub value: Option<String>,
     #[serde(rename = "use")]
-    pub c_use: Option<String>,
+    pub contact_use: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// Address
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Address {
     #[serde(rename = "use")]
-    pub a_use: Option<String>,
+    pub address_use: Option<String>,
     pub line: Option<Vec<String>>,
     pub city: Option<String>,
     pub state: Option<String>,
-    #[serde(rename = "postalCode")]
     pub postal_code: Option<String>,
     pub country: Option<String>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Communication {
-    pub language: Option<CodeableConcept>,
 }
