@@ -59,7 +59,9 @@
     "vaul": "^0.9.6",
     "zod": "^3.24.1",
     "@types/react": "latest",
-    "@types/react-dom": "latest"
+    "@types/react-dom": "latest",
+    "path": "latest",
+    "fs": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",
