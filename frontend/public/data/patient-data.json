@@ -171,6 +171,12 @@
             "title":"Hospital Admission",
             "description":"Brief hospital stay due to severe pneumonia. Full recovery achieved after antibiotic treatment.",
             "icon":"Hospital"
+        },
+        {
+            "year":"2015",
+            "title":"New Hospital Admission",
+            "description":"Brief hospital stay due to severe pneumonia.",
+            "icon":"Activity"
         }
     ]
 }
