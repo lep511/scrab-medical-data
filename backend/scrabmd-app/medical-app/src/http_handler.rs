@@ -68,7 +68,8 @@ pub fn handle_discovery() -> String {
                 "prefetch": {
                     "patient": "Patient/{{context.patientId}}",
                     "conditions": "Condition?patient={{context.patientId}}",
-                    "allergies": "AllergyIntolerance?patient={{context.patientId}}"
+                    "allergies": "AllergyIntolerance?patient={{context.patientId}}",
+                    "observations": "Observation?patient={{context.patientId}}"
                 }
             }
         ]
