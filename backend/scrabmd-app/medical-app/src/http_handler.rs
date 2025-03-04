@@ -1,14 +1,13 @@
 use lambda_http::{Body, Request, Error, Response};
 use lambda_http::tracing::{error, info};
-use crate::libs::{HookResponse, BundleEntry};
-use crate::scrab_errors::ScrabError;
+use crate::libs::manage_hook_data;
 use serde_json::json;
 use std::env;
 
 pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     // Extract some useful information from the request
-    // info!("Event: {:?}", event);
-    info!("Body: {:?}", event.body());
+    info!("Event: {:?}", event);
+    // info!("Body: {:?}", event.body());
     let path_fm = event.uri().path();
     // Smart App URL launch
     let smart_app_uri = env::var("SMART_APP_URI").expect("SMART_APP_URI must be set");
@@ -21,24 +20,44 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         .collect::<Vec<&str>>()
         .join("/");
 
-    let body: Body = match path.as_str() {
+    let body_string = match event.body() {
+        Body::Text(text) => text,
+        _ => ""
+    };
+    let body_resp: String;
+
+    match path.as_str() {
         "cds-services/0001" => {
             info!("Services path cds-services-0001");
-            handle_patient_view(event.body(), &smart_app_uri)?
+            body_resp = handle_patient_view(&body_string, &smart_app_uri).await;
         }
         _ => {
-            handle_discovery()?
+            info!("Services path cds-services-0001");
+            body_resp = handle_discovery();
         }
-    };
+    }
 
     Ok(Response::builder()
         .status(200)
         .header("content-type", "application/json")
-        .body(body)
+        .body(body_resp.into())
         .map_err(Box::new)?)
 }
 
-fn handle_discovery() -> Result<Body, ScrabError> {
+pub async fn handle_patient_view(
+    hook_data: &str, 
+    smart_app_uri: &str,
+) -> String {
+    match manage_hook_data(hook_data, smart_app_uri).await {
+        Ok(body) => body,
+        Err(error) => {
+            error!("Error: {:?}", error);
+            handle_error()
+        }
+    }
+}
+
+pub fn handle_discovery() -> String {
     let body = json!({ 
         "services": [
             {
@@ -48,108 +67,17 @@ fn handle_discovery() -> Result<Body, ScrabError> {
                 "id": "0001",
                 "prefetch": {
                     "patient": "Patient/{{context.patientId}}",
-                    "conditions": "Condition?patient={{context.patientId}}"
+                    "conditions": "Condition?patient={{context.patientId}}",
+                    "allergies": "AllergyIntolerance?patient={{context.patientId}}"
                 }
             }
         ]
     });
     
-    Ok(Body::Text(body.to_string()))
+    body.to_string()
 }
 
-fn handle_patient_view(
-    hook_data: &Body, 
-    smart_app_uri: &str,
-) -> Result<Body, ScrabError> {
-    
-    let body_str = match hook_data {
-        Body::Text(body) => body,
-        _ => {
-            error!("[E0993] Body is not text.");
-            return handle_error();
-        }
-    };
-
-    let response: HookResponse = parse_hook_response(body_str)?;
-
-    let names: (String, String) = match extract_patient_name(&response) {
-        Some(names) => names,
-        None => {
-            error!("[E0995] Error extracting patient name.");
-            return handle_error();
-        }
-    };
-
-    let greeting = format!(
-        "Hello, {} {}!", 
-        names.0,
-        names.1
-    );
-
-    let conditions: &Vec<BundleEntry>  = &response
-        .prefetch
-        .unwrap_or_default()
-        .conditions
-        .unwrap_or_default()
-        .entry
-        .unwrap_or_default();
-
-    let condition = &conditions[0];
-    println!("Condition: {:?}", condition);
-
-    let body = json!({ 
-        "cards": [
-            {
-                "summary": greeting,
-                "indicator": "info",
-                "source": {
-                    "label": "test service"
-                },
-                "links": [
-                    {
-                        "label": "My App",
-                        "url": smart_app_uri,
-                        "type": "smart"
-                    }
-                ]
-            },
-            {
-                "summary": "Some Warning",
-                "indicator": "warning",
-                "source": {
-                    "label": "test service"
-                },
-                "suggestions": [
-                    {
-                        "uuid": "XXX",
-                        "label": "Some suggestion"
-                    }
-                ]
-            }
-        ]
-    });
-
-    Ok(Body::Text(body.to_string()))
-}
-
-fn extract_patient_name(response: &HookResponse) -> Option<(String, String)> {
-    if let Some(prefetch) = &response.prefetch {
-        if let Some(patient) = &prefetch.patient {
-            if let Some(names) = &patient.name {
-                // Assuming the first name in the list is the primary name
-                if let Some(human_name) = names.get(0) {
-                    let family_name = human_name.family.clone().unwrap_or_default();
-                    let given_names = human_name.given.clone().unwrap_or_default();
-                    let given_name = given_names.join(" ");
-                    return Some((given_name, family_name));
-                }
-            }
-        }
-    }
-    None
-}
-
-fn handle_error() -> Result<Body, ScrabError> {
+fn handle_error() -> String {
        
     let body = json!({ 
         "cards": [
@@ -163,16 +91,5 @@ fn handle_error() -> Result<Body, ScrabError> {
         ]
     });
 
-    Ok(Body::Text(body.to_string()))
-}
-
-/// Helper function to parse JSON string into HookResponse
-pub fn parse_hook_response(json_str: &str) -> Result<HookResponse, ScrabError> {
-    match serde_json::from_str(json_str) {
-        Ok(response) => Ok(response),
-        Err(error) => {
-            error!("Error parsing HookResponse: {:?}", error);
-            Err(ScrabError::InvalidJson("Error to convert json".to_string()))
-        }
-    }
+    body.to_string()
 }
