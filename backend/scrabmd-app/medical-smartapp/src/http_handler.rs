@@ -8,6 +8,7 @@ use crate::http_page::{
     get_connect_page, get_error_page, redirect_url,
     get_server_error,
 };
+use crate::intro_console::main_console_page;
 use crate::oidc_request::{
     TokenResponse, get_token_accesss, discover_endpoints,
 };
@@ -269,7 +270,18 @@ pub(crate) async fn function_handler(
                 state,
                 client_id
             );
-            let message = redirect_url(&launch_redirect_uri);
+
+            let message = match main_console_page(
+                state,
+                &table_name,
+            ).await {
+                Ok(message) => message,
+                Err(e) => {
+                    error!("Error getting main console page: {} [E475]", e);
+                    get_server_error("E475")
+                }
+            };
+
             let body = Body::Text(message);
             return Ok(ApiGatewayV2httpResponse {
                 status_code: 200,
