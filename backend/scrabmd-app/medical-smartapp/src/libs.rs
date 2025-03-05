@@ -272,7 +272,7 @@ fn extract_patient_name(response: &HookResponse) -> Option<(String, String)> {
 pub struct MedicalRecord {
     pub id: String,
     pub name: String,
-    pub age: u8,
+    pub age: u32,
     pub gender: String,
     pub blood_type: String,
     pub address: String,
@@ -299,11 +299,11 @@ pub struct Medication {
 #[serde(rename_all = "camelCase")]
 pub struct VitalSign {
     pub date: String,
-    pub heart_rate: u8,
+    pub heart_rate: u32,
     pub blood_pressure: String,
     pub temperature: f32,
-    pub respiratory_rate: u8,
-    pub oxygen_saturation: u8,
+    pub respiratory_rate: u32,
+    pub oxygen_saturation: u32,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
@@ -332,6 +332,42 @@ pub struct TimelineEvent {
     pub description: String,
     pub icon: String,
     pub highlight: bool,
+}
+
+// Trait for setting default values and selective updates
+pub trait DefaultValueSetter {
+    /// Create a new instance with default values
+    fn new_default() -> Self;
+
+    /// Selectively update fields with new values
+    fn set_fields(&mut self, updater: impl Fn(&mut Self));
+}
+
+impl DefaultValueSetter for MedicalRecord {
+    fn new_default() -> Self {
+        Self {
+            id: "n/a".to_string(),
+            name: "n/a".to_string(),
+            age: 0,
+            gender: "n/a".to_string(),
+            blood_type: "n/a".to_string(),
+            address: "n/a".to_string(),
+            phone: "n/a".to_string(),
+            email: "n/a".to_string(),
+            emergency_contact: "n/a".to_string(),
+            allergies: vec!["n/a".to_string()],
+            chronic_conditions: vec!["n/a".to_string()],
+            current_medications: vec![],
+            vital_signs: vec![],
+            treatments: vec![],
+            appointments: vec![],
+            timeline: vec![],
+        }
+    }
+
+    fn set_fields(&mut self, updater: impl Fn(&mut Self)) {
+        updater(self);
+    }
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~ MAIN PAGE PARAMETERS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

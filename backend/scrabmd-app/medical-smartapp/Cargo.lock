@@ -524,8 +524,10 @@ checksum = "1a7964611d71df112cb1730f2ee67324fcf4d0fc6606acbbe9bfe06df124637c"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
+ "js-sys",
  "num-traits",
  "serde",
+ "wasm-bindgen",
  "windows-link",
 ]
 
@@ -1335,6 +1337,7 @@ dependencies = [
  "aws-sdk-dynamodb",
  "aws_lambda_events",
  "base64 0.22.1",
+ "chrono",
  "http 1.2.0",
  "lambda_runtime",
  "rand 0.9.0",

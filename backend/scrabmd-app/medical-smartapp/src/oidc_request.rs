@@ -125,7 +125,7 @@ pub async fn get_token_accesss(
 
 pub async fn get_mdata(
     iss: &str,
-    param: &str,
+    query: &str,
     access_token: &str,
 ) -> Result<String, AuthEndpointError> {
     // Creates an HTTPS-capable client using rustls TLS implementation.
@@ -136,7 +136,7 @@ pub async fn get_mdata(
     let url = format!(
         "{}/{}", 
         iss.trim_end_matches('/'),
-        param,
+        query,
     );
     let mut headers = HeaderMap::new();
     let auth_str = format!("Bearer {}", access_token);
