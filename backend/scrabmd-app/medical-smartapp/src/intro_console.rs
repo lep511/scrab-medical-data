@@ -12,6 +12,7 @@ pub struct PatientDetails {
     pub full_name: String,
     pub address: String,
     pub gender: String,
+    pub ethnicity: String,
     pub phone: String,
     pub age: u32,
 }
@@ -54,6 +55,7 @@ pub async fn main_console_page(
         r.name = patient_details.full_name.clone();
         r.age = patient_details.age;
         r.gender = patient_details.gender.clone();
+        r.ethnicity = patient_details.ethnicity.clone();
         r.address = patient_details.address.clone();
         r.phone = patient_details.phone.clone();
         r.allergies = vec!["Penicillin".to_string()];
@@ -133,6 +135,8 @@ pub fn calculate_age(birth_date_str: &str) -> u32 {
 }
 
 fn extract_patient_details(patient: &Patient) -> PatientDetails {
+    info!("Patient: {:?}", patient);
+
     // Extract first given name
     let first_given_name = patient.name.as_ref()
         .and_then(|names| names.first())
@@ -164,6 +168,9 @@ fn extract_patient_details(patient: &Patient) -> PatientDetails {
         })
         .unwrap_or_else(|| "n/a".to_string());
 
+    // ToDo Extract ethnicity
+    let ethnicity = "n/a".to_string();
+
     // Extract gender
     let mut gender = patient.gender.clone().unwrap_or_else(|| "n/a".to_string());
     if gender != "n/a" {gender = capitalize_first_char(&gender);}
@@ -178,6 +185,7 @@ fn extract_patient_details(patient: &Patient) -> PatientDetails {
     PatientDetails {
         full_name: format!("{} {}", first_given_name, family_name),
         address: full_address,
+        ethnicity,
         gender,
         phone: "n/a".to_string(),
         age: age,

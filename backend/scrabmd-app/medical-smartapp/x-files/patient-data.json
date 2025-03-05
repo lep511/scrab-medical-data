@@ -3,7 +3,7 @@
     "name":"Jane Smith",
     "age":42,
     "gender":"Female",
-    "bloodType":"O+",
+    "ethnicity":"Non Hispanic or Latino",
     "address":"123 Medical Way, Healthcare City",
     "phone":"(555) 123-4567",
     "email":"jane.smith@example.com",

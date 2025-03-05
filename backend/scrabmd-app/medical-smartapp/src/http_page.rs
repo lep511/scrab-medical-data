@@ -382,7 +382,7 @@ pub fn get_main_page(
                         <span id="patientId"></span>
                         <span id="patientAge"></span>
                         <span id="patientGender"></span>
-                        <span id="patientBloodType"></span>
+                        <span id="patientEthnicity"></span>
                     </div>
                     <div class="contact-info">
                         <span id="patientPhone"></span>
@@ -466,7 +466,7 @@ pub fn get_main_page(
                 document.getElementById('patientId').textContent = `ID: ${patientData.id}`;
                 document.getElementById('patientAge').textContent = `${patientData.age} years`;
                 document.getElementById('patientGender').textContent = patientData.gender;
-                document.getElementById('patientBloodType').textContent = `Blood Type: ${patientData.bloodType}`;
+                document.getElementById('patientEthnicity').textContent = `Ethnicity: ${patientData.ethnicity}`;
                 document.getElementById('patientPhone').textContent = patientData.phone;
                 document.getElementById('patientEmail').textContent = patientData.email;
                 document.getElementById('emergencyContact').textContent = patientData.emergencyContact;
