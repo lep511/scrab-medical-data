@@ -1,4 +1,4 @@
-use serde_json::{json, Value};
+use serde_json::Value;
 use serde::{Deserialize, Serialize};
 
 /// Root struct for the hook response
@@ -345,6 +345,54 @@ pub trait DefaultValueSetter {
 
 impl DefaultValueSetter for MedicalRecord {
     fn new_default() -> Self {
+        let timeline = vec![
+            TimelineEvent {
+                year: "n/a".to_string(),
+                title: "n/a".to_string(),
+                description: "n/a".to_string(),
+                icon: "Activity".to_string(),
+                highlight: false,
+            },
+        ];
+
+        let appointments = vec![
+            Appointment {
+                date: "n/a".to_string(),
+                time: "n/a".to_string(),
+                provider: "n/a".to_string(),
+                a_type: "n/a".to_string(),
+                location: "n/a".to_string(),
+            },
+        ];
+
+        let treatments = vec![
+            Treatment {
+                date: "n/a".to_string(),
+                t_type: "n/a".to_string(),
+                provider: "n/a".to_string(),
+                notes: "n/a".to_string(),
+            },
+        ];
+
+        let vital_signs = vec![
+            VitalSign {
+                date: "n/a".to_string(),
+                heart_rate: 0,
+                blood_pressure: "n/a".to_string(),
+                temperature: 0.0,
+                respiratory_rate: 0,
+                oxygen_saturation: 0,
+            },
+        ];
+
+        let current_medications = vec![
+            Medication {
+                name: "n/a".to_string(),
+                dosage: "n/a".to_string(),
+                frequency: "n/a".to_string(),
+            },
+        ];
+
         Self {
             id: "n/a".to_string(),
             name: "n/a".to_string(),
@@ -357,11 +405,11 @@ impl DefaultValueSetter for MedicalRecord {
             emergency_contact: "n/a".to_string(),
             allergies: vec!["n/a".to_string()],
             chronic_conditions: vec!["n/a".to_string()],
-            current_medications: vec![],
-            vital_signs: vec![],
-            treatments: vec![],
-            appointments: vec![],
-            timeline: vec![],
+            current_medications: current_medications,
+            vital_signs: vital_signs,
+            treatments: treatments,
+            appointments: appointments,
+            timeline: timeline,
         }
     }
 

@@ -7,8 +7,11 @@ use std::collections::HashMap;
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct SessionData {
     pub pk: String,
+    pub access_token: Option<String>,
     pub expires_in: Option<i32>,
     pub scope: Option<String>,
+    pub token_type: Option<String>,
+    pub id_token: Option<String>,
     pub session_state: Option<String>,
     pub client_id: Option<String>,
     pub code_verifier: Option<String>,
@@ -17,7 +20,7 @@ pub struct SessionData {
     pub token_endpoint: Option<String>,
     pub iss: Option<String>,
     pub session_timeout: Option<i64>,
-    pub patient_id: Option<String>,
+    pub patient: Option<String>,
 }
 
 impl SessionData {
@@ -29,11 +32,20 @@ impl SessionData {
         item.insert("pk".to_string(), AttributeValue::S(self.pk.clone()));
         
         // Add optional fields only if they exist
+        if let Some(token) = &self.access_token {
+            item.insert("access_token".to_string(), AttributeValue::S(token.clone()));
+        }
         if let Some(exp) = self.expires_in {
             item.insert("expires_in".to_string(), AttributeValue::N(exp.to_string()));
         }
         if let Some(scope) = &self.scope {
             item.insert("scope".to_string(), AttributeValue::S(scope.clone()));
+        }
+        if let Some(token_type) = &self.token_type {
+            item.insert("token_type".to_string(), AttributeValue::S(token_type.clone()));
+        }
+        if let Some(id_token) = &self.id_token {
+            item.insert("id_token".to_string(), AttributeValue::S(id_token.clone()));
         }
         if let Some(session_state) = &self.session_state {
             item.insert("session_state".to_string(), AttributeValue::S(session_state.clone()));
@@ -59,8 +71,8 @@ impl SessionData {
         if let Some(session_timeout) = self.session_timeout {
             item.insert("session_timeout".to_string(), AttributeValue::N(session_timeout.to_string()));
         }
-        if let Some(patient_id) = &self.patient_id {
-            item.insert("patient_id".to_string(), AttributeValue::S(patient_id.clone()));
+        if let Some(patient) = &self.patient {
+            item.insert("patient".to_string(), AttributeValue::S(patient.clone()));
         }
         item
     }
@@ -92,8 +104,11 @@ pub async fn get_session_data(
     if let Some(item) = result.item() {
         let session_data = SessionData {
             pk: pk.to_string(),
+            access_token: item.get("access_token").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
             expires_in: item.get("expires_in").and_then(|av| av.as_n().ok().and_then(|n| n.parse::<i32>().ok())),
             scope: item.get("scope").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
+            token_type: item.get("token_type").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
+            id_token: item.get("id_token").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
             session_state: item.get("session_state").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
             client_id: item.get("client_id").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
             code_verifier: item.get("code_verifier").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
@@ -102,7 +117,7 @@ pub async fn get_session_data(
             token_endpoint: item.get("token_endpoint").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
             iss: item.get("iss").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
             session_timeout: item.get("session_timeout").and_then(|av| av.as_n().ok().and_then(|n| n.parse::<i64>().ok())),
-            patient_id: item.get("patient_id").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
+            patient: item.get("patient").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
         };
         Ok(Some(session_data))
     } else {

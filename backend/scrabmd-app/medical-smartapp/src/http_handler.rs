@@ -161,22 +161,7 @@ pub(crate) async fn function_handler(
             // Extract parameters
             let code = query_params.first("code").unwrap_or_default();
             let session_state = query_params.first("session_state").unwrap_or_default();
-            let state = match query_params.first("state") {
-                Some(state) if !state.is_empty() => state,
-                _ => {
-                    error!("State not found in parameters [E468]");
-                    let message = get_server_error("E468");
-                    let body = Body::Text(message);
-                    return Ok(ApiGatewayV2httpResponse {
-                        status_code: 468,
-                        headers: headers,
-                        multi_value_headers: HeaderMap::new(),
-                        body: Some(body),
-                        cookies: cookies,
-                        is_base64_encoded: false}
-                    );
-                }
-            };           
+            let state = query_params.first("state").unwrap_or_default();         
 
             cookies.push(format!("session={state}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=3600"));
             let mut issuer = String::new();
@@ -204,7 +189,7 @@ pub(crate) async fn function_handler(
                 Err(e) => error!("Error retrieving session data: {:?} [E312]", e),
             }
 
-            // ~~~~~~~~~~~~~~~~~~~~ TOKEN ~~~~~~~~~~~~~~~~~~~~~~~~~~
+            // ~~~~~~~~~~~~~~~~~~~~ TOKEN ~~~~~~~~~~~~~~~~~~~~~~~~~~     
             let token_resp: TokenResponse = match get_token_accesss(
                 &client_id,
                 &token_endpoint,
@@ -233,9 +218,12 @@ pub(crate) async fn function_handler(
             let patient_id = token_resp.patient.clone().unwrap_or_default();
 
             let session_data = SessionData {
-                pk: state.to_string(),
+                pk: session_state.to_string(),
+                access_token: Some(token.clone()),
                 expires_in: token_resp.expires_in,
                 scope: Some(scope.to_string()),
+                token_type: token_resp.token_type,
+                id_token: token_resp.id_token,
                 session_state: Some(session_state.to_string()),
                 client_id: Some(client_id.clone()),
                 code_verifier: Some(code_verifier.clone()),
@@ -244,7 +232,7 @@ pub(crate) async fn function_handler(
                 token_endpoint: Some(token_endpoint.clone()),
                 iss: Some(issuer.clone()),
                 session_timeout: Some(session_timeout),
-                patient_id: Some(patient_id.clone()),
+                patient: Some(patient_id.clone()),
             };
         
             match save_to_dynamo(
@@ -263,13 +251,11 @@ pub(crate) async fn function_handler(
                 patient_id: patient_id.clone(),
             };
 
-            let message = match main_console_page(
-                &mpage_params
-            ).await {
+            let message = match main_console_page(&mpage_params).await {
                 Ok(message) => message,
                 Err(e) => {
-                    error!("Error getting main console page: {} [E475]", e);
-                    get_server_error("E475")
+                    error!("Error getting main page: {} [E495]", e);
+                    get_server_error("E495")
                 }
             };
 

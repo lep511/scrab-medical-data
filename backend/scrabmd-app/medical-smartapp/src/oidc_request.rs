@@ -2,35 +2,10 @@ use reqwest::blocking::Client;
 use reqwest::{self, header::{HeaderMap, HeaderValue}};
 use reqwest::Method;
 use serde_json::Value;
-use thiserror::Error;
-use lambda_runtime::tracing::{info, error};
+use lambda_runtime::tracing::error;
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-
-#[allow(dead_code)]
-#[derive(Error, Debug)]
-pub enum AuthEndpointError {   
-    #[error("Network request failed: {0}")]
-    RequestFailed(#[from] reqwest::Error),
-
-    #[error("Invalid response format")]
-    InvalidResponseFormat(#[from] serde_json::Error),
-    
-    #[error("Missing or invalid authorization_endpoint in response")]
-    MissingAuthEndpoint,
-
-    #[error("Missing or invalid token_endpoint in response")]
-    MissingTokenEndpoint,
-    
-    #[error("Invalid authorization endpoint URL: {0}")]
-    InvalidAuthEndpoint(String),
-
-    #[error("Request error: {0}")]
-    RequestError(String),
-
-    #[error("{0}")]
-    GenericError(String),
-}
+use crate::scrab_errors::ScrabError;
 
 #[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -45,7 +20,7 @@ pub struct TokenResponse {
 
 pub async fn discover_endpoints(
     iss: &str
-) -> Result<(String, String), AuthEndpointError> {
+) -> Result<(String, String), ScrabError> {
     let client = Client::new();
     
     // First try SMART configuration
@@ -55,9 +30,9 @@ pub async fn discover_endpoints(
     if response.status().is_success() {
         let config: Value = response.json()?;
         let auth_endpoint = config["authorization_endpoint"].as_str()
-            .ok_or(AuthEndpointError::MissingAuthEndpoint)?;
+            .ok_or(ScrabError::MissingAuthEndpoint)?;
         let token_endpoint = config["token_endpoint"].as_str()
-            .ok_or(AuthEndpointError::MissingTokenEndpoint)?;
+            .ok_or(ScrabError::MissingTokenEndpoint)?;
         
         return Ok((auth_endpoint.to_string(), token_endpoint.to_string()));
     }
@@ -69,14 +44,14 @@ pub async fn discover_endpoints(
     if response.status().is_success() {
         let config: Value = response.json()?;
         let auth_endpoint = config["authorization_endpoint"].as_str()
-            .ok_or(AuthEndpointError::MissingAuthEndpoint)?;
+            .ok_or(ScrabError::MissingAuthEndpoint)?;
         let token_endpoint = config["token_endpoint"].as_str()
-            .ok_or(AuthEndpointError::MissingTokenEndpoint)?;
+            .ok_or(ScrabError::MissingTokenEndpoint)?;
         
         return Ok((auth_endpoint.to_string(), token_endpoint.to_string()));
     }
     
-    Err(AuthEndpointError::GenericError("Could not discover authorization endpoints".into()))
+    Err(ScrabError::GenericError("Could not discover authorization endpoints".into()))
 }
 
 pub async fn get_token_accesss(
@@ -86,7 +61,7 @@ pub async fn get_token_accesss(
     code_verifier: &str,
     redirect_uri: &str,
     scope: &str,
-) -> Result<TokenResponse, AuthEndpointError> {
+) -> Result<TokenResponse, ScrabError> {
     // Creates an HTTPS-capable client using rustls TLS implementation.
     let client = reqwest::Client::builder()
         .use_rustls_tls()
@@ -108,15 +83,27 @@ pub async fn get_token_accesss(
         .headers(headers)
         .form(&params);
 
-    let response = request.send().await?;
-    let body = response.text().await?;
-    info!("Token response: {}", body);
+    let response = match request.send().await {
+        Ok(response) => response,
+        Err(e) => {
+            error!("Error sending token request: {}", e);
+            return Err(ScrabError::RequestError(e.to_string()));
+        }
+    };
 
+    let body = match response.text().await {
+        Ok(body) => body,
+        Err(e) => {
+            error!("Error reading token response: {}", e);
+            return Err(ScrabError::RequestError(e.to_string()));
+        }
+    };
+    
     let token_response: TokenResponse = match serde_json::from_str(&body) {
         Ok(token) => token,
         Err(e) => {
             error!("Error parsing token response: {}", e);
-            return Err(AuthEndpointError::InvalidResponseFormat(e));
+            return Err(ScrabError::InvalidResponseFormat(e));
         }
     };
 
@@ -127,7 +114,7 @@ pub async fn get_mdata(
     iss: &str,
     query: &str,
     access_token: &str,
-) -> Result<String, AuthEndpointError> {
+) -> Result<String, ScrabError> {
     // Creates an HTTPS-capable client using rustls TLS implementation.
     let client = reqwest::Client::builder()
         .use_rustls_tls()
@@ -147,12 +134,18 @@ pub async fn get_mdata(
     let request = client.request(Method::GET, url)
         .headers(headers);
 
-    let response = request.send().await?;
+    let response = match request.send().await {
+        Ok(response) => response,
+        Err(e) => {
+            error!("Error sending token request: {}", e);
+            return Err(ScrabError::RequestError(e.to_string()));
+        }
+    };
 
     // Check if status code is in the 200-299 range
     let status = response.status();
     if !status.is_success() {
-        return Err(AuthEndpointError::RequestError(format!(
+        return Err(ScrabError::RequestError(format!(
             "Request failed with status: {}", status
         )));
     }

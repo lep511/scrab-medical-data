@@ -1,7 +1,5 @@
-use serde_json::Value;
-
 pub fn get_main_page(
-    json_data: &Value,
+    json_data: &str,
 ) -> String {
     let response = r#"
     <!DOCTYPE html><html lang="en"><head><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
@@ -516,11 +514,11 @@ pub fn get_main_page(
                 const vitalSignsGrid = document.getElementById('vitalSignsGrid');
                 
                 const vitalTypes = [
-                    { name: 'Heart Rate', value: latestVitals.heartRate, unit: 'bpm' },
-                    { name: 'Blood Pressure', value: latestVitals.bloodPressure, unit: 'mmHg' },
-                    { name: 'Temperature', value: latestVitals.temperature, unit: '°F' },
-                    { name: 'Respiratory Rate', value: latestVitals.respiratoryRate, unit: 'bpm' },
-                    { name: 'Oxygen Saturation', value: latestVitals.oxygenSaturation, unit: '%' }
+                    { name: 'Heart Rate', value: latestVitals.heartRate, unit: '\xa0 bpm' },
+                    { name: 'Blood Pressure', value: latestVitals.bloodPressure, unit: '\xa0 mmHg' },
+                    { name: 'Temperature', value: latestVitals.temperature, unit: '\xa0 °F' },
+                    { name: 'Respiratory Rate', value: latestVitals.respiratoryRate, unit: '\xa0 bpm' },
+                    { name: 'Oxygen Saturation', value: latestVitals.oxygenSaturation, unit: '\xa0 %' }
                 ];
                 
                 vitalTypes.forEach(vital => {
@@ -985,11 +983,7 @@ pub fn get_main_page(
     </body></html>
     "#.to_string();
 
-    let json_data_str = match serde_json::to_string_pretty(json_data) {
-        Ok(json_str) => json_str,
-        Err(_) => String::from("{}"),
-    };
-    let response_fmt = response.replace("<json_data_placeholder>", &json_data_str);
+    let response_fmt = response.replace("<json_data_placeholder>", json_data);
     response_fmt
 }
 

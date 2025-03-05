@@ -3,6 +3,7 @@ mod http_handler;
 mod libs;
 mod intro_console;
 mod http_page;
+mod scrab_errors;
 mod oidc_request;
 mod oidc_database;
 use http_handler::function_handler;

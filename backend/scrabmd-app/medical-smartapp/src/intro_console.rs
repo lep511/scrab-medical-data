@@ -1,10 +1,12 @@
 use crate::oidc_request::get_mdata;
 use crate::http_page::get_main_page;
 use crate::libs::{MedicalRecord, MainPageParams, Patient};
-use crate::libs::DefaultValueSetter;
+use crate::libs::{
+    DefaultValueSetter, Medication, VitalSign, Treatment, TimelineEvent
+};
 use lambda_runtime::tracing::{error, info};
-use chrono::{Datelike, NaiveDate, Utc};
-use serde_json::{Value, json};
+use chrono::{NaiveDate, Utc};
+use crate::scrab_errors::ScrabError;
 
 pub struct PatientDetails {
     pub full_name: String,
@@ -16,21 +18,28 @@ pub struct PatientDetails {
 
 pub async fn main_console_page(
     params: &MainPageParams,
-) -> Result<String, Box<dyn std::error::Error>> {
+) -> Result<String, ScrabError> {
 
     let query = format!("Patient/{}", params.patient_id);
+    info!("Query: {}", query);
 
-    let patient_data = get_mdata(
+    let patient_data = match get_mdata(
         &params.iss,
         &query,
         &params.access_token,
-    ).await?;
-
+    ).await {
+        Ok(data) => data,
+        Err(e) => {
+            error!("Error getting patient data: {:?}", e);
+            return Err(ScrabError::GenericError("Error getting metadata".to_string()));
+        }
+    };
+        
     let patient: Patient = match parse_patient_response(&patient_data) {
         Ok(patient) => patient,
-        Err(error) => {
-            error!("Error parsing Patient data: {:?}", error);
-            return Err(error);
+        Err(e) => {
+            error!("Error parsing patient data: {:?}", e);
+            return Err(ScrabError::GenericError("Error parsing patient data".to_string()));
         }
     };
 
@@ -49,26 +58,47 @@ pub async fn main_console_page(
         r.phone = patient_details.phone.clone();
         r.allergies = vec!["Penicillin".to_string()];
         
-        // r.current_medications.push(Medication {
-        //     name: "Aspirin".to_string(),
-        //     dosage: "100mg".to_string(),
-        //     frequency: "Daily".to_string(),
-        // });
+        r.current_medications.push(Medication {
+            name: "Aspirin".to_string(),
+            dosage: "100mg".to_string(),
+            frequency: "Daily".to_string(),
+        });
         
-        // r.vital_signs.push(VitalSign {
-        //     date: "2024-03-04".to_string(),
-        //     temperature: 37.0,
-        //     blood_pressure: "120/80".to_string(),
-        //     heart_rate: 72,
-        //     respiratory_rate: 16,
-        // });
+        r.vital_signs.push(VitalSign {
+            date: "2024-03-04".to_string(),
+            temperature: 37.0,
+            blood_pressure: "120/80".to_string(),
+            heart_rate: 72,
+            respiratory_rate: 16,
+            oxygen_saturation: 98,
+        });
+
+        r.treatments.push(Treatment {
+            date: "2024-03-04".to_string(),
+            t_type: "Medication Adjustment".to_string(),
+            provider: "Medication Adjustment".to_string(),
+            notes: "Increased Lisinopril to 10mg".to_string(),
+        });
+
+        r.timeline.push(TimelineEvent {
+            year: "2019".to_string(),
+            title: "New Hospital Admission".to_string(),
+            description: "Brief hospital stay due to severe pneumonia.".to_string(),
+            icon: "Hospital".to_string(),
+            highlight: false,
+        });
     });
 
-    let patients_json = json!(record);
-    let html = get_main_page(
-        &patients_json,
-    );
+    let patients_json = match serde_json::to_string_pretty(&record) {
+        Ok(json) => json,
+        Err(e) => {
+            error!("Error serializing record to JSON: {:?}", e);
+            return Err(ScrabError::GenericError("Error serializing record to JSON".to_string()));
+        }
+    };
 
+    let html = get_main_page(&patients_json);
+    
     Ok(html)
 }
 
@@ -140,8 +170,9 @@ fn extract_patient_details(patient: &Patient) -> PatientDetails {
 
     // Extract birth date
     let birth_date = patient.birth_date.clone().unwrap_or_else(|| "n/a".to_string());
+    let mut age = 0;
     if birth_date != "n/a" {
-        let age = calculate_age(&birth_date);
+        age = calculate_age(&birth_date);
     }
 
     PatientDetails {
@@ -149,6 +180,6 @@ fn extract_patient_details(patient: &Patient) -> PatientDetails {
         address: full_address,
         gender,
         phone: "n/a".to_string(),
-        age: 0,
+        age: age,
     }
 }
