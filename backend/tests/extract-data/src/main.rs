@@ -4,7 +4,6 @@ use tracing::{error, info};
 use serde_json::json;
 use tracing::{span, Level};
 
-/// Root struct for the hook response
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HookResponse {
@@ -182,19 +181,19 @@ pub struct Period {
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Extension {
-    pub extension: Option<Vec<ExtensionItem>>,
+    #[serde(rename = "extension")]
+    pub extensions: Option<Vec<NestedExtension>>,
+    pub url: Option<String>,
 }
 /// Extension item
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ExtensionItem {
+pub struct NestedExtension {
     pub url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub value_string: Option<String>,
+    pub valueString: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub value_code: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub value_coding: Option<Coding>,
+    pub valueCoding: Option<String>,
 }
 
 /// Human name
@@ -441,36 +440,18 @@ pub fn parse_patient_response(json_str: &str) -> Result<Patient, Box<dyn std::er
     }
 }
 
-pub fn extract_ethnicity(patient: &Patient) -> String {
-    let url = "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity";
-    let mut ethnicity = String::from("n/a");
-    
-    if let Some(extension) = patient.extension.as_ref() {
-        for ext in extension {
-            println!("value: {:?}", ext);
-            if let Some(ext_item) = ext.extension.as_ref() {
-                for item in ext_item {
-                    if let Some(ext_url) = item.url.as_ref() {
-                        if let Some(ext_ext) = ext.extension.as_ref() {
-                            for e in ext_ext {
-                                if let Some(value) = e.value_coding.as_ref() {
-                                    if let Some(display) = value.display.as_ref() {
-                                        ethnicity = display.to_string();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+pub fn extract_ethnicity(patient: &Patient) -> Option<String> {
+    let ethnicity_extension_url = "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity";
 
-    if ethnicity == "n/a" {
-        "n/a".to_string()
-    } else {
-        ethnicity
-    }
+    patient.extension.as_ref()?
+        .iter()
+        .find(|ext| ext.url.as_deref() == Some(ethnicity_extension_url))
+        .and_then(|ext| ext.extensions.as_ref())
+        .and_then(|nested_exts| {
+            nested_exts.iter().find_map(|nested_ext| {
+                nested_ext.valueString.clone().or_else(|| nested_ext.valueCoding.clone())
+            })
+        })    
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -688,12 +669,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let patient: Patient = match parse_patient_response(&patient_data.to_string()) {
         Ok(patient) => patient,
         Err(e) => {
-            error!("Error parsing patient data: {:?}", e);
+            println!("Error parsing patient data: {:?}", e);
             return Err(e);
         }
     };
 
-    let ethnicity = extract_ethnicity(&patient);
+    let ethnicity = extract_ethnicity(&patient)
+        .unwrap_or_else(|| "n/a".to_string());
+    
     println!("Ethnicity: {}", ethnicity);
 
     Ok(())

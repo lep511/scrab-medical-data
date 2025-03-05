@@ -1565,4 +1565,128 @@ pub fn get_server_error(error_code: &str) -> String {
     response_fmt
 }
 
+pub fn session_out(error_code: &str) -> String {
+    let response = r#"
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Error 440 - Session Expired</title>
+        <style>
+            body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #1e293b;
+            }
+            .container {
+            max-width: 600px;
+            width: 90%;
+            padding: 48px;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            text-align: center;
+            margin: 20px;
+            }
+            h1 {
+            font-size: 28px;
+            margin-bottom: 16px;
+            color: #0f172a;
+            font-weight: 600;
+            }
+            p {
+            font-size: 16px;
+            margin-bottom: 24px;
+            color: #475569;
+            line-height: 1.6;
+            }
+            .button {
+            display: inline-block;
+            padding: 14px 32px;
+            background-color: #3b82f6;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            }
+            .button:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+            }
+            .footer {
+            margin-top: 24px;
+            padding: 16px;
+            text-align: center;
+            font-size: 14px;
+            color: #64748b;
+            }
+            .footer a {
+            color: #3b82f6;
+            text-decoration: none;
+            }
+            .footer a:hover {
+            text-decoration: underline;
+            }
+            .security-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 24px;
+            color: #64748b;
+            font-size: 12px;
+            }
+            .security-badge svg {
+            margin-right: 8px;
+            }
+            @media (max-width: 600px) {
+            .container {
+                padding: 32px 24px;
+                width: 85%;
+            }
+            h1 {
+                font-size: 24px;
+            }
+            p {
+                font-size: 15px;
+            }
+            .button {
+                font-size: 15px;
+                padding: 12px 24px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            }
+        </style>
+        </head>
+        <body>
+        <div class="container">
+            <h1>Error 440: Session Expired</h1>
+            <p>Your session has timed out due to inactivity. For your security, please log in again to continue.</p>
+            <div class="security-badge">
+            Error code: <error_code>
+            </div>
+        </div>
+        <footer class="footer">
+            <p>&copy; Hackathon - Predictive AI In Healthcare with FHIR.<br>
+            Need help? <a href="/support">Contact Support</a> | <a href="/privacy">Privacy Policy</a> | <a href="/terms">Terms of Service</a></p>
+        </footer>
+        </body>
+        </html>
+    "#;
+    
+    let response_fmt = response.replace("<error_code>", error_code);
+    response_fmt
+}
+
 

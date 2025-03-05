@@ -16,6 +16,7 @@ pub struct SessionData {
     pub client_id: Option<String>,
     pub code_verifier: Option<String>,
     pub code_challenge: Option<String>,
+    pub code_challenge_method: Option<String>,
     pub auth_endpoint: Option<String>,
     pub token_endpoint: Option<String>,
     pub iss: Option<String>,
@@ -58,6 +59,9 @@ impl SessionData {
         }
         if let Some(code_challenge) = &self.code_challenge {
             item.insert("code_challenge".to_string(), AttributeValue::S(code_challenge.clone()));
+        }
+        if let Some(code_challenge_method) = &self.code_challenge_method {
+            item.insert("code_challenge_method".to_string(), AttributeValue::S(code_challenge_method.clone()));
         }
         if let Some(auth_endpoint) = &self.auth_endpoint {
             item.insert("auth_endpoint".to_string(), AttributeValue::S(auth_endpoint.clone()));
@@ -113,6 +117,7 @@ pub async fn get_session_data(
             client_id: item.get("client_id").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
             code_verifier: item.get("code_verifier").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
             code_challenge: item.get("code_challenge").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
+            code_challenge_method: item.get("code_challenge_method").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
             auth_endpoint: item.get("auth_endpoint").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
             token_endpoint: item.get("token_endpoint").and_then(|av| av.as_s().ok().map(|s| s.to_string())),
             iss: item.get("iss").and_then(|av| av.as_s().ok().map(|s| s.to_string())),

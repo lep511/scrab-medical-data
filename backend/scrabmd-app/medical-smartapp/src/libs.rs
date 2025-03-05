@@ -180,18 +180,25 @@ pub struct Period {
 #[serde(rename_all = "camelCase")]
 pub struct Extension {
     #[serde(rename = "extension")]
-    pub extensions: Option<Vec<NestedExtension>>,
+    pub extensions: Option<Vec<ExtensionItem>>,
     pub url: Option<String>,
 }
-/// Extension item
+
 #[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct NestedExtension {
+pub struct ExtensionItem {
     pub url: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub valueString: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub valueCoding: Option<String>,
+    pub value_string: Option<String>,
+    pub value_code: Option<String>,
+    pub value_coding: Option<ValueCoding>,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ValueCoding {
+    pub system: Option<String>,
+    pub code: Option<String>,
+    pub display: Option<String>,
 }
 
 /// Human name
@@ -429,3 +436,36 @@ pub struct MainPageParams {
     pub access_token: String,
     pub patient_id: String,
 }
+
+pub fn extract_ethnicity(patient: &Patient) -> String {
+    match extract_ethnicity_handle(patient) {
+        Some(ethnicity) => ethnicity,
+        None => "Unknown".to_string(),
+    }
+}
+
+fn extract_ethnicity_handle(patient: &Patient) -> Option<String> {
+    let eth_url = "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity";
+    patient.extension.as_ref().and_then(|extensions| {
+        extensions.iter().find(|ext| ext.url.as_deref() == Some(eth_url)).and_then(|ext| {
+            ext.extensions.as_ref()?.iter().find_map(|sub_ext| {
+                sub_ext.value_coding.as_ref()?.display.clone()
+            })
+        })
+    })
+}
+
+
+// pub fn extract_ethnicity(patient: &Patient) -> String {
+//     let eth_url = "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity";
+//     patient.extension.as_ref()
+//         .and_then(|extensions| {
+//             extensions.iter()
+//                 .find(|ext| ext.url.as_deref() == Some(eth_url))
+//                 .and_then(|ext| {
+//                     ext.extensions.as_ref()?.iter()
+//                         .find_map(|sub_ext| sub_ext.value_coding.as_ref()?.display.clone())
+//                 })
+//         })
+//         .unwrap_or_default()
+// }

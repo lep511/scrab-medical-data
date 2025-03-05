@@ -2,7 +2,8 @@ use crate::oidc_request::get_mdata;
 use crate::http_page::get_main_page;
 use crate::libs::{MedicalRecord, MainPageParams, Patient};
 use crate::libs::{
-    DefaultValueSetter, Medication, VitalSign, Treatment, TimelineEvent
+    DefaultValueSetter, Medication, VitalSign, Treatment, TimelineEvent,
+    extract_ethnicity,
 };
 use lambda_runtime::tracing::{error, info};
 use chrono::{NaiveDate, Utc};
@@ -135,7 +136,6 @@ pub fn calculate_age(birth_date_str: &str) -> u32 {
 }
 
 fn extract_patient_details(patient: &Patient) -> PatientDetails {
-    info!("Patient: {:?}", patient);
 
     // Extract first given name
     let first_given_name = patient.name.as_ref()
@@ -168,8 +168,14 @@ fn extract_patient_details(patient: &Patient) -> PatientDetails {
         })
         .unwrap_or_else(|| "n/a".to_string());
 
-    // ToDo Extract ethnicity
-    let ethnicity = "n/a".to_string();
+    // Extract phone
+    let phone = patient.telecom.as_ref()
+        .and_then(|telecoms| telecoms.first())
+        .and_then(|telecom| telecom.value.clone())
+        .unwrap_or_else(|| "n/a".to_string());
+
+    // Extract ethnicity
+    let ethnicity = extract_ethnicity(patient);
 
     // Extract gender
     let mut gender = patient.gender.clone().unwrap_or_else(|| "n/a".to_string());
@@ -187,7 +193,7 @@ fn extract_patient_details(patient: &Patient) -> PatientDetails {
         address: full_address,
         ethnicity,
         gender,
-        phone: "n/a".to_string(),
+        phone,
         age: age,
     }
 }

@@ -5,7 +5,7 @@ use aws_lambda_events::event::apigw::{
 use http::header::{HeaderMap, HeaderValue};
 use aws_lambda_events::encodings::Body;
 use crate::http_page::{
-    get_error_page, redirect_url,get_server_error,
+    get_error_page, redirect_url,get_server_error, session_out,
 };
 use crate::libs::MainPageParams;
 use crate::intro_console::main_console_page;
@@ -115,6 +115,7 @@ pub(crate) async fn function_handler(
                 client_id: client_id.to_string().into(),
                 code_verifier: code_verifier.into(),
                 code_challenge: code_challenge.clone().into(),
+                code_challenge_method: Some("S256".to_string()),
                 auth_endpoint: auth_endpoint.into(),
                 token_endpoint: token_endpoint.into(),
                 iss: issuer.to_string().into(),
@@ -168,6 +169,7 @@ pub(crate) async fn function_handler(
             let mut client_id = String::new();
             let mut code_verifier = String::new();
             let mut code_challenge = String::new();
+            let mut code_challenge_method = String::new();
             let mut auth_endpoint = String::new();
             let mut token_endpoint = String::new();
             let mut session_timeout: i64 = 0;
@@ -180,6 +182,7 @@ pub(crate) async fn function_handler(
                     if let Some(av) = sd.iss { issuer = av.clone(); }
                     if let Some(av) = sd.client_id { client_id = av.clone(); }
                     if let Some(av) = sd.code_challenge { code_challenge = av.clone(); }
+                    if let Some(av) = sd.code_challenge_method { code_challenge_method = av.clone(); }
                     if let Some(av) = sd.code_verifier { code_verifier = av.clone(); }
                     if let Some(av) = sd.auth_endpoint { auth_endpoint = av.clone(); }
                     if let Some(av) = sd.token_endpoint { token_endpoint = av.clone(); }
@@ -218,7 +221,7 @@ pub(crate) async fn function_handler(
             let patient_id = token_resp.patient.clone().unwrap_or_default();
 
             let session_data = SessionData {
-                pk: session_state.to_string(),
+                pk: state.to_string(),
                 access_token: Some(token.clone()),
                 expires_in: token_resp.expires_in,
                 scope: Some(scope.to_string()),
@@ -228,6 +231,7 @@ pub(crate) async fn function_handler(
                 client_id: Some(client_id.clone()),
                 code_verifier: Some(code_verifier.clone()),
                 code_challenge: Some(code_challenge.clone()),
+                code_challenge_method: Some(code_challenge_method.clone()),
                 auth_endpoint: Some(auth_endpoint.clone()),
                 token_endpoint: Some(token_endpoint.clone()),
                 iss: Some(issuer.clone()),
@@ -243,8 +247,74 @@ pub(crate) async fn function_handler(
                 Err(e) => error!("Error saving session data to Dynamo: {:?} [E332]", e),
             }
 
-            // ~~~~~~~~~~~~~~~~~~~~ MAIN PAGE ~~~~~~~~~~~~~~~~~~~~~~~~~~
+            let app_url = format!("https://{}/scrabapp", domain_name);
 
+            // Parse the base endpoint URL
+            let base_url = Url::parse(&app_url)?;
+
+            // Create a mutable URL for building the query
+            let mut url = base_url.clone();
+
+            // Add all query parameters
+            url.query_pairs_mut()
+                .append_pair("state", &state)
+                .append_pair("code_challenge", &code_challenge)
+                .append_pair("code_challenge_method", &code_challenge_method);
+
+            // Convert Url to string
+            let link = url.to_string();
+            let message = redirect_url(&link);
+            let body = Body::Text(message);
+            return Ok(ApiGatewayV2httpResponse {
+                status_code: 200,
+                headers: headers,
+                multi_value_headers: HeaderMap::new(),
+                body: Some(body),
+                cookies: cookies,
+                is_base64_encoded: false}
+            );
+        }
+        // ~~~~~~~~~~~~~~~~~~~~ SCRAB APP ~~~~~~~~~~~~~~~~~~~~~~~~~~
+        "ANY /scrabapp" => {
+            info!("Route key: {}", route_key);
+
+            // Extract parameters
+            let state = query_params.first("state").unwrap_or_default();        
+
+            // Set mutable variables
+            let mut issuer = String::new();
+            let mut token = String::new();
+            let mut patient_id = String::new();
+            let mut session_timeout: i64 = 0;
+
+            match get_session_data(
+                state, 
+                &table_name
+            ).await {
+                Ok(Some(sd)) => {
+                    if let Some(av) = sd.iss { issuer = av.clone(); }
+                    if let Some(av) = sd.access_token { token = av.clone(); }
+                    if let Some(av) = sd.patient { patient_id = av.clone(); }
+                    if let Some(av) = sd.session_timeout { session_timeout = av; }
+                },
+                Ok(None) => error!("No session data found [E711]"),
+                Err(e) => error!("Error retrieving session data: {:?} [E712]", e),
+            }
+
+            if session_timeout != 0 && session_timeout < actual_time_epoch {
+                error!("Session timeout [E713]");
+                let message = session_out("E713");
+                let body = Body::Text(message);
+                return Ok(ApiGatewayV2httpResponse {
+                    status_code: 713,
+                    headers: headers,
+                    multi_value_headers: HeaderMap::new(),
+                    body: Some(body),
+                    cookies: cookies,
+                    is_base64_encoded: false}
+                );
+            }
+    
             let mpage_params = MainPageParams {
                 iss: issuer.clone(),
                 access_token: token.clone(),
@@ -258,7 +328,6 @@ pub(crate) async fn function_handler(
                     get_server_error("E495")
                 }
             };
-
             let body = Body::Text(message);
             return Ok(ApiGatewayV2httpResponse {
                 status_code: 200,
@@ -268,10 +337,6 @@ pub(crate) async fn function_handler(
                 cookies: cookies,
                 is_base64_encoded: false}
             );
-        }
-        // ~~~~~~~~~~~~~~~~~~~~ TASKS ~~~~~~~~~~~~~~~~~~~~~~~~~~
-        "ANY /tasks" => {
-            info!("Route key: {}", route_key);
         }
         _ => {
             error!("Route key not found: {} [E341]", route_key);
