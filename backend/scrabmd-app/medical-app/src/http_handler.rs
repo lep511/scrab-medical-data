@@ -70,14 +70,12 @@ pub fn handle_discovery() -> String {
                 "id": "medication",
                 "prefetch": {
                     "conditions": "Condition?patient={{context.patientId}}",
+                    "observations": "Observation?patient={{context.patientId}}",
                     "medications": "MedicationStatement?patient={{context.patientId}}"
                 }
             }
         ]
     });
-
-    // "allergies": "AllergyIntolerance?patient={{context.patientId}}",
-    // "observations": "Observation?patient={{context.patientId}}"
     
     body.to_string()
 }
