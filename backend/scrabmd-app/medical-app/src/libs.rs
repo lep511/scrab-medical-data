@@ -2,6 +2,7 @@ use serde_json::{json, Value};
 use lambda_http::tracing::{error, info};
 use serde::{Deserialize, Serialize};
 use crate::scrab_errors::ScrabError;
+use url::Url;
 
 /// Root struct for the hook response
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -28,18 +29,14 @@ pub struct Context {
 pub struct Prefetch {
     pub conditions: Option<Bundle>,
     pub patient: Option<Patient>,
-    pub allergies: Option<Bundle>,
-    // pub medications: Option<Bundle>,
+    pub medications: Option<Bundle>,
+    // pub allergies: Option<Bundle>,
     // pub observations: Option<Bundle>,
     // pub procedures: Option<Bundle>,
-    // pub immunizations: Option<Bundle>,
     // pub careplans: Option<Bundle>,
     // pub devices: Option<Bundle>,
     // pub encounters: Option<Bundle>,
     // pub immunizations: Option<Bundle>,
-    // pub medications: Option<Bundle>,
-    // pub observations: Option<Bundle>,
-    // pub procedures: Option<Bundle>,
 }
 
 /// Bundle of resources (e.g., conditions)
@@ -282,42 +279,49 @@ fn extract_patient_name(response: &HookResponse) -> Option<(String, String)> {
 
 pub async fn manage_hook_data(
     hook_data: &str, 
-    smart_app_uri: &str, 
+    smart_app: &str, 
 ) -> Result<String, ScrabError> {
 
     let response: HookResponse = parse_hook_response(hook_data)?;
 
     info!("Hook data: {:?}", response);
+    
+    let iss = response.fhir_server.clone().unwrap_or_default();
+    let user_id = response.context.as_ref().and_then(|ctx| ctx.user_id.clone()).unwrap_or_default();
+    let patient_id = response.context.as_ref().and_then(|ctx| ctx.patient_id.clone());
+    let call_back = format!("{}/callback", smart_app);
+    let smart_app_uri = format!("{}/launch", smart_app);
 
-    let names: (String, String) = match extract_patient_name(&response) {
-        Some(names) => names,
-        None => {
-            error!("Error extracting patient name.");
-            return Err(ScrabError::InvalidJson("Error extracting patient name".to_string()));
-        }
-    };
-
-    let greeting = format!(
-        "Hello, {} {}!", 
-        names.0,
-        names.1
-    );
-
-    let conditions: &Vec<BundleEntry>  = &response
+    let medications: &Vec<BundleEntry>  = &response
         .prefetch
         .unwrap_or_default()
-        .conditions
+        .medications
         .unwrap_or_default()
         .entry
         .unwrap_or_default();
 
-    let condition = &conditions[0];
-    println!("Condition: {:?}", condition);
+    // info!("Medications: {:?}", medications);
+
+    // // Parse the base endpoint URL
+    // let base_url = Url::parse(&smart_app_uri)?;
+
+    // // Create a mutable URL for building the query
+    // let mut url = base_url.clone();
+
+    // info!("Base URL: {:?}", iss);
+
+    // // Add all query parameters
+    // url.query_pairs_mut()
+    //     .append_pair("user_id", &user_id)
+    //     .append_pair("client", &user_id);
+
+    // // Convert Url to string
+    // let link = url.to_string();
 
     let body = json!({ 
         "cards": [
             {
-                "summary": greeting,
+                "summary": "Medication",
                 "indicator": "info",
                 "source": {
                     "label": "test service"
@@ -325,7 +329,7 @@ pub async fn manage_hook_data(
                 "links": [
                     {
                         "label": "My App",
-                        "url": smart_app_uri,
+                        "url": &smart_app_uri,
                         "type": "smart"
                     }
                 ]

@@ -11,8 +11,6 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     let path_fm = event.uri().path();
     // Smart App URL launch
     let smart_app = env::var("SMART_APP_URI").expect("SMART_APP_URI must be set");
-    let smart_app_uri = format!("{}/launch", smart_app);
-    let smart_app_uri_callback = format!("{}/callback", smart_app);
     
     let path: String = path_fm.rsplitn(3, '/')
         .take(2)
@@ -31,7 +29,11 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     match path.as_str() {
         "cds-services/0001" => {
             info!("Services path cds-services-0001");
-            body_resp = handle_patient_view(&body_string, &smart_app_uri).await;
+            body_resp = handle_patient_view(&body_string, &smart_app).await;
+        }
+        "cds-services/medication" => {
+            info!("Services path cds-services-medication");
+            body_resp = handle_patient_view(&body_string, &smart_app).await;
         }
         _ => {
             info!("Services path cds-services-0001");
@@ -46,11 +48,12 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         .map_err(Box::new)?)
 }
 
+// Function Handle Patient View
 pub async fn handle_patient_view(
     hook_data: &str, 
-    smart_app_uri: &str,
+    smart_app: &str,
 ) -> String {
-    match manage_hook_data(hook_data, smart_app_uri).await {
+    match manage_hook_data(hook_data, smart_app).await {
         Ok(body) => body,
         Err(error) => {
             error!("Error: {:?}", error);
@@ -59,9 +62,7 @@ pub async fn handle_patient_view(
     }
 }
 
-// "allergies": "AllergyIntolerance?patient={{context.patientId}}",
-// "observations": "Observation?patient={{context.patientId}}"
-
+// Function Handle Discovery
 pub fn handle_discovery() -> String {
     let body = json!({ 
         "services": [
@@ -72,11 +73,14 @@ pub fn handle_discovery() -> String {
                 "id": "0001",
                 "prefetch": {
                     "conditions": "Condition?patient={{context.patientId}}",
-                    "medication": "MedicationStatement?patient={{context.patientId}}"
+                    "medications": "MedicationStatement?patient={{context.patientId}}"
                 }
             }
         ]
     });
+
+    // "allergies": "AllergyIntolerance?patient={{context.patientId}}",
+    // "observations": "Observation?patient={{context.patientId}}"
     
     body.to_string()
 }

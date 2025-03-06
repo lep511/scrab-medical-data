@@ -75,9 +75,9 @@ pub(crate) async fn function_handler(
         "GET /launch" => {
             info!("Route key: {}", route_key);
             // Get the IssuerUrl and Launch
-            let issuer = query_params.first("iss").unwrap_or_default();
             let launch = query_params.first("launch").unwrap_or_default();
             let client_id = query_params.first("client").unwrap_or_default();
+            let issuer = query_params.first("iss").unwrap_or_default();
 
             let state: String = generate_random_state(16);
 

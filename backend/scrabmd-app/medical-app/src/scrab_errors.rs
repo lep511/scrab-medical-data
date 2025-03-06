@@ -1,4 +1,5 @@
 use thiserror::Error;
+use url::ParseError;
 use std::io;
 
 #[allow(dead_code)]
@@ -12,6 +13,9 @@ pub enum ScrabError {
     
     #[error("Invalid JSON: {0}")]
     InvalidJson(String),
+
+    #[error("URL parsing error: {0}")]
+    UrlParseError(#[from] ParseError),
     
     #[error("Missing or invalid authorization_endpoint in response")]
     MissingAuthEndpoint,
