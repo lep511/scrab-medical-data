@@ -3,9 +3,10 @@ use crate::http_page::get_main_page;
 use crate::libs::{MedicalRecord, MainPageParams, Patient};
 use crate::libs::{
     DefaultValueSetter, Medication, VitalSign, Treatment, TimelineEvent,
-    extract_ethnicity,
+    Appointment, extract_ethnicity,
 };
-use lambda_runtime::tracing::{error, info};
+use lambda_runtime::tracing::error;
+use crate::llm_allergies::extract_allergies;
 use chrono::{NaiveDate, Utc};
 use crate::scrab_errors::ScrabError;
 
@@ -23,7 +24,6 @@ pub async fn main_console_page(
 ) -> Result<String, ScrabError> {
 
     let query = format!("Patient/{}", params.patient_id);
-    info!("Query: {}", query);
 
     let patient_data = match get_mdata(
         &params.iss,
@@ -50,6 +50,9 @@ pub async fn main_console_page(
     // Create a new record with all default 'n/a' values
     let mut record = MedicalRecord::new_default();
 
+    // Extract allergies data
+    let allergies: Vec<String> = extract_allergies(params).await;
+
     // Selectively update specific fields
     record.set_fields(|r| {
         r.id = params.patient_id.clone();
@@ -59,37 +62,177 @@ pub async fn main_console_page(
         r.ethnicity = patient_details.ethnicity.clone();
         r.address = patient_details.address.clone();
         r.phone = patient_details.phone.clone();
-        r.allergies = vec!["Penicillin".to_string()];
+        r.email = "somemail@example.com".to_string();
+        r.emergency_contact = "John Smith (Husband) - (555) 987-6543".to_string();
+        
+        // r.allergies = vec!["Penicillin".to_string()];
+        r.allergies = allergies.clone();
         
         r.current_medications.push(Medication {
             name: "Aspirin".to_string(),
             dosage: "100mg".to_string(),
             frequency: "Daily".to_string(),
         });
-        
+
+        r.current_medications.push(Medication {
+            name: "Metformin".to_string(),
+            dosage: "500mg".to_string(),
+            frequency: "Twice daily".to_string(),
+        });
+
         r.vital_signs.push(VitalSign {
-            date: "2024-03-04".to_string(),
-            temperature: 37.0,
-            blood_pressure: "120/80".to_string(),
+            date: "2023-06-01".to_string(),
+            heart_rate: 74,
+            blood_pressure: "123/81".to_string(),
+            temperature: 98.8,
+            respiratory_rate: 16,
+            oxygen_saturation: 97,
+        });
+
+        r.vital_signs.push(VitalSign {
+            date: "2023-05-01".to_string(),
+            heart_rate: 71,
+            blood_pressure: "119/80".to_string(),
+            temperature: 98.6,
+            respiratory_rate: 15,
+            oxygen_saturation: 98,
+        });
+
+        r.vital_signs.push(VitalSign {
+            date: "2023-04-01".to_string(),
+            heart_rate: 73,
+            blood_pressure: "121/79".to_string(),
+            temperature: 98.5,
+            respiratory_rate: 16,
+            oxygen_saturation: 98,
+        });
+
+        r.vital_signs.push(VitalSign {
+            date: "2023-03-01".to_string(),
+            heart_rate: 70,
+            blood_pressure: "118/78".to_string(),
+            temperature: 98.7,
+            respiratory_rate: 15,
+            oxygen_saturation: 99,
+        });
+
+        r.vital_signs.push(VitalSign {
+            date: "2023-02-01".to_string(),
+            heart_rate: 75,
+            blood_pressure: "122/82".to_string(),
+            temperature: 98.4,
+            respiratory_rate: 16,
+            oxygen_saturation: 97,
+        });
+
+        r.vital_signs.push(VitalSign {
+            date: "2023-01-01".to_string(),
             heart_rate: 72,
+            blood_pressure: "120/80".to_string(),
+            temperature: 98.6,
             respiratory_rate: 16,
             oxygen_saturation: 98,
         });
 
         r.treatments.push(Treatment {
-            date: "2024-03-04".to_string(),
+            date: "2023-01-15".to_string(),
             t_type: "Medication Adjustment".to_string(),
             provider: "Medication Adjustment".to_string(),
             notes: "Increased Lisinopril to 10mg".to_string(),
         });
 
+        r.treatments.push(Treatment {
+            date: "2023-02-20".to_string(),
+            t_type: "Physical Therapy".to_string(),
+            provider: "Dr. Michael Rodriguez".to_string(),
+            notes: "Started PT for lower back pain".to_string(),
+        });
+
+        r.treatments.push(Treatment {
+            date: "2023-03-10".to_string(),
+            t_type: "Lab Work".to_string(),
+            provider: "Dr. Emily Chen".to_string(),
+            notes: "Comprehensive metabolic panel and A1C".to_string(),
+        });
+
+        r.treatments.push(Treatment {
+            date: "2023-04-05".to_string(),
+            t_type: "Specialist Consultation".to_string(),
+            provider: "Dr. Sarah Johnson".to_string(),
+            notes: "Endocrinology consult for diabetes management".to_string(),
+        });
+
+        r.treatments.push(Treatment {
+            date: "2023-05-18".to_string(),
+            t_type: "Medication Adjustment".to_string(),
+            provider: "Dr. Emily Chen".to_string(),
+            notes: "Added low-dose aspirin".to_string(),
+        });
+
+        r.appointments.push(Appointment {
+            date: "2023-07-15".to_string(),
+            time: "10:00 AM".to_string(),
+            provider: "Dr. Emily Chen".to_string(),
+            a_type: "Follow-up".to_string(),
+            location: "Main Hospital, Room 302".to_string(),
+        });
+
+        r.appointments.push(Appointment {
+            date: "2023-08-05".to_string(),
+            time: "2:30 PM".to_string(),
+            provider: "Dr. Michael Rodriguez".to_string(),
+            a_type: "Physical Therapy".to_string(),
+            location: "Rehabilitation Center".to_string(),
+        });
+
+        r.appointments.push(Appointment {
+            date: "2023-09-10".to_string(),
+            time: "9:15 AM".to_string(),
+            provider: "Dr. Sarah Johnson".to_string(),
+            a_type: "Endocrinology".to_string(),
+            location: "Specialty Clinic, Suite 105".to_string(),
+        });
+
+        r.timeline.push(TimelineEvent {
+            year: "2023".to_string(),
+            title: "Cardiac Assessment".to_string(),
+            description: "Comprehensive cardiac evaluation revealed normal heart function with minor irregularities in rhythm. Prescribed beta blockers for management.".to_string(),
+            icon: "HeartPulse".to_string(),
+            highlight: true,
+        });
+
+        r.timeline.push(TimelineEvent {
+            year: "2022".to_string(),
+            title: "Type 2 Diabetes Diagnosis".to_string(),
+            description: "Initial diagnosis of Type 2 Diabetes. Started on Metformin 500mg twice daily. Implemented lifestyle modifications and dietary changes.".to_string(),
+            icon: "Activity".to_string(),
+            highlight: false,
+        });
+
+        r.timeline.push(TimelineEvent {
+            year: "2021".to_string(),
+            title: "Annual Physical".to_string(),
+            description: "Regular check-up showed elevated blood pressure (140/90). Recommended lifestyle changes and monthly monitoring.".to_string(),
+            icon: "Stethoscope".to_string(),
+            highlight: false,
+        });
+
         r.timeline.push(TimelineEvent {
             year: "2019".to_string(),
+            title: "Medication Review".to_string(),
+            description: "Comprehensive medication review. Adjusted dosages for better management of chronic conditions.".to_string(),
+            icon: "Pill".to_string(),
+            highlight: false,
+        });
+        
+        r.timeline.push(TimelineEvent {
+            year: "2015".to_string(),
             title: "New Hospital Admission".to_string(),
             description: "Brief hospital stay due to severe pneumonia.".to_string(),
             icon: "Hospital".to_string(),
             highlight: false,
         });
+
     });
 
     let patients_json = match serde_json::to_string_pretty(&record) {

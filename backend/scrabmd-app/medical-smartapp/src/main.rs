@@ -1,6 +1,8 @@
 use lambda_runtime::{run, service_fn, tracing, Error};
 mod http_handler;
 mod libs;
+mod gemini;
+mod llm_allergies;
 mod intro_console;
 mod http_page;
 mod scrab_errors;

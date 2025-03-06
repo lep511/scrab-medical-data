@@ -983,6 +983,7 @@ pub fn get_main_page(
     </body></html>
     "#.to_string();
 
+    println!("json_data: {}", json_data);
     let response_fmt = response.replace("<json_data_placeholder>", json_data);
     response_fmt
 }

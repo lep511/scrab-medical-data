@@ -357,53 +357,11 @@ pub trait DefaultValueSetter {
 
 impl DefaultValueSetter for MedicalRecord {
     fn new_default() -> Self {
-        let timeline = vec![
-            TimelineEvent {
-                year: "n/a".to_string(),
-                title: "n/a".to_string(),
-                description: "n/a".to_string(),
-                icon: "Activity".to_string(),
-                highlight: false,
-            },
-        ];
-
-        let appointments = vec![
-            Appointment {
-                date: "n/a".to_string(),
-                time: "n/a".to_string(),
-                provider: "n/a".to_string(),
-                a_type: "n/a".to_string(),
-                location: "n/a".to_string(),
-            },
-        ];
-
-        let treatments = vec![
-            Treatment {
-                date: "n/a".to_string(),
-                t_type: "n/a".to_string(),
-                provider: "n/a".to_string(),
-                notes: "n/a".to_string(),
-            },
-        ];
-
-        let vital_signs = vec![
-            VitalSign {
-                date: "n/a".to_string(),
-                heart_rate: 0,
-                blood_pressure: "n/a".to_string(),
-                temperature: 0.0,
-                respiratory_rate: 0,
-                oxygen_saturation: 0,
-            },
-        ];
-
-        let current_medications = vec![
-            Medication {
-                name: "n/a".to_string(),
-                dosage: "n/a".to_string(),
-                frequency: "n/a".to_string(),
-            },
-        ];
+        let timeline = vec![];
+        let appointments = vec![];
+        let treatments = vec![];
+        let vital_signs = vec![];
+        let current_medications = vec![];
 
         Self {
             id: "n/a".to_string(),
@@ -415,8 +373,8 @@ impl DefaultValueSetter for MedicalRecord {
             phone: "n/a".to_string(),
             email: "n/a".to_string(),
             emergency_contact: "n/a".to_string(),
-            allergies: vec!["n/a".to_string()],
-            chronic_conditions: vec!["n/a".to_string()],
+            allergies: vec![],
+            chronic_conditions: vec![],
             current_medications: current_medications,
             vital_signs: vital_signs,
             treatments: treatments,
@@ -454,18 +412,3 @@ fn extract_ethnicity_handle(patient: &Patient) -> Option<String> {
         })
     })
 }
-
-
-// pub fn extract_ethnicity(patient: &Patient) -> String {
-//     let eth_url = "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity";
-//     patient.extension.as_ref()
-//         .and_then(|extensions| {
-//             extensions.iter()
-//                 .find(|ext| ext.url.as_deref() == Some(eth_url))
-//                 .and_then(|ext| {
-//                     ext.extensions.as_ref()?.iter()
-//                         .find_map(|sub_ext| sub_ext.value_coding.as_ref()?.display.clone())
-//                 })
-//         })
-//         .unwrap_or_default()
-// }
