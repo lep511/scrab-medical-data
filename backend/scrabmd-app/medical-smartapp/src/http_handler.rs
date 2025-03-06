@@ -9,6 +9,7 @@ use crate::http_page::{
 };
 use crate::libs::MainPageParams;
 use crate::intro_console::main_console_page;
+use crate::cds_hooks::{get_cds_services, get_cds_medication};
 use crate::oidc_request::{
     TokenResponse, get_token_accesss, discover_endpoints,
 };
@@ -329,6 +330,44 @@ pub(crate) async fn function_handler(
                 }
             };
             let body = Body::Text(message);
+            return Ok(ApiGatewayV2httpResponse {
+                status_code: 200,
+                headers: headers,
+                multi_value_headers: HeaderMap::new(),
+                body: Some(body),
+                cookies: cookies,
+                is_base64_encoded: false}
+            );
+        }
+        // ~~~~~~~~~~~~~~~~~~~~ CDS HOOK ~~~~~~~~~~~~~~~~~~~~~~~~~~
+        "GET /cds-services" => {
+            info!("Route key: {}", route_key);
+            let message = get_cds_services();
+            let body = Body::Text(message);
+
+            // Reset headers to response
+            headers = HeaderMap::new();
+            headers.insert("Content-Type", HeaderValue::from_static("application/json"));
+
+            return Ok(ApiGatewayV2httpResponse {
+                status_code: 200,
+                headers: headers,
+                multi_value_headers: HeaderMap::new(),
+                body: Some(body),
+                cookies: cookies,
+                is_base64_encoded: false}
+            );
+        }
+        "POST /cds-services/medication" => {
+            info!("Route key: {}", route_key);
+            // let body = event.payload.unwrap_or_default();
+            let message = get_cds_medication();
+            let body = Body::Text(message);
+
+            // Reset headers to response
+            headers = HeaderMap::new();
+            headers.insert("Content-Type", HeaderValue::from_static("application/json"));
+
             return Ok(ApiGatewayV2httpResponse {
                 status_code: 200,
                 headers: headers,

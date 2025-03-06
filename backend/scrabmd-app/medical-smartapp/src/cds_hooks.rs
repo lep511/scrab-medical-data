@@ -1,5 +1,6 @@
 use serde_json::{json, Value};
-use lambda_http::tracing::{error, info};
+use aws_lambda_events::encodings::Body;
+use lambda_runtime::tracing::{error, info};
 use serde::{Deserialize, Serialize};
 use crate::scrab_errors::ScrabError;
 
@@ -275,6 +276,82 @@ fn extract_patient_name(response: &HookResponse) -> Option<(String, String)> {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ MANAGE HOOK DATA ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// Function Handle Patient View
+pub async fn handle_patient_view(
+    hook_data: &str, 
+) -> String {
+    match manage_hook_data(hook_data).await {
+        Ok(body) => body,
+        Err(error) => {
+            error!("Error: {:?}", error);
+            handle_error()
+        }
+    }
+}
+
+// Function CDS Services
+pub fn get_cds_services() -> String {
+    let body = json!({ 
+        "services": [
+            {
+                "hook": "patient-view",
+                "title": "Patient Medication",
+                "description": "Patient medication description",
+                "id": "medication",
+                "prefetch": {
+                    "conditions": "Condition?patient={{context.patientId}}",
+                    "medications": "MedicationStatement?patient={{context.patientId}}"
+                }
+            }
+        ]
+    });
+
+    // "allergies": "AllergyIntolerance?patient={{context.patientId}}",
+    // "observations": "Observation?patient={{context.patientId}}"
+    
+    body.to_string()
+}
+
+pub fn get_cds_medication() -> String {
+    let body = json!({
+        "cards": [
+            {
+                "summary": "Medication",
+                "indicator": "info",
+                "source": {
+                    "label": "test service"
+                }
+            },
+            {
+                "summary": "Some Warning",
+                "indicator": "warning",
+                "source": {
+                    "label": "test service"
+                }
+            }
+        ]
+    });
+
+    body.to_string()
+}
+
+pub fn handle_error() -> String {
+       
+    let body = json!({ 
+        "cards": [
+            {
+                "summary": "patient-view",
+                "indicator": "info",
+                "source": {
+                    "label": "No event"
+                }
+            }
+        ]
+    });
+
+    body.to_string()
+}
 
 pub async fn manage_hook_data(
     hook_data: &str, 
