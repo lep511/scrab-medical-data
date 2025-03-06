@@ -10,7 +10,9 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     // info!("Body: {:?}", event.body());
     let path_fm = event.uri().path();
     // Smart App URL launch
-    let smart_app_uri = env::var("SMART_APP_URI").expect("SMART_APP_URI must be set");
+    let smart_app = env::var("SMART_APP_URI").expect("SMART_APP_URI must be set");
+    let smart_app_uri = format!("{}/launch", smart_app);
+    let smart_app_uri_callback = format!("{}/callback", smart_app);
     
     let path: String = path_fm.rsplitn(3, '/')
         .take(2)
@@ -57,6 +59,9 @@ pub async fn handle_patient_view(
     }
 }
 
+// "allergies": "AllergyIntolerance?patient={{context.patientId}}",
+// "observations": "Observation?patient={{context.patientId}}"
+
 pub fn handle_discovery() -> String {
     let body = json!({ 
         "services": [
@@ -66,10 +71,8 @@ pub fn handle_discovery() -> String {
                 "description": "Patient view description",
                 "id": "0001",
                 "prefetch": {
-                    "patient": "Patient/{{context.patientId}}",
                     "conditions": "Condition?patient={{context.patientId}}",
-                    "allergies": "AllergyIntolerance?patient={{context.patientId}}",
-                    "observations": "Observation?patient={{context.patientId}}"
+                    "medication": "MedicationStatement?patient={{context.patientId}}"
                 }
             }
         ]
