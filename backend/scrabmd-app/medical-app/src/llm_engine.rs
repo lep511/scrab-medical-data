@@ -1,5 +1,4 @@
 use crate::gemini::chat::ChatGemini;
-use serde::{Deserialize, Serialize};
 use lambda_http::tracing::info;
 // use serde_json::{Value, json};
 use chrono::prelude::*;
@@ -15,7 +14,7 @@ pub async fn manage_medication(
     let today_fmt = today.format("%B %-d, %Y");
 
     let prompt = format!(
-        "Identify and list the medicines currently consumed by the patient from the provided json FHIR data, assuming today's date is {}. \
+        "Identify and list the medicines currently consumed by the patient from the provided FHIR data, assuming today's date is {}. \
         \n \
         # Output Format \
         \n \
@@ -24,11 +23,10 @@ pub async fn manage_medication(
         \n \
         # Notes \
         \n \
-        - The input data should comply with FHIR standards.\n \
         - Consider active prescriptions and consumption statuses only. Show separately the medicines taken by the patient in the past.\n \
         - If the effectiveDateTime field appears instead of effectivePeriod, it means that the patient is currently taking the medicine.\n \
         - Displays all dates in format YYYYY/mm/dd\n \
-        - Response without any formatting just plain text. Shows only a brief summary.\n \
+        - Always show the start and end dates of each medicine, if applicable.\n \
         \n\n \
         # FHIR Data \n \
         {}", 
@@ -54,5 +52,5 @@ pub async fn manage_medication(
         });
     });
 
-    Ok(med_result)
+    Ok(med_result.replace("*", "").replace("#", ""))
 }

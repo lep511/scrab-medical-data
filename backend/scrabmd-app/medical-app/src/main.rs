@@ -4,6 +4,7 @@ mod libs;
 mod gemini;
 mod llm_engine;
 mod scrab_errors;
+mod http_page;
 use http_handler::function_handler;
 
 #[tokio::main]

@@ -2,26 +2,26 @@ use serde_json::{json, Value, from_str};
 use lambda_http::tracing::{error, warn, info};
 use crate::llm_engine::manage_medication;
 use crate::scrab_errors::ScrabError;
-use std::env;
+use url::Url;
 
-fn extract_medications(json_str: &str) -> Vec<String> {
+fn extract_medications_stat(json_str: &str) -> Vec<String> {
     // Parse the JSON string into a serde_json::Value
     let v: Value = match from_str(json_str) {
         Ok(value) => value,
         Err(e) => {
-            eprintln!("Failed to parse JSON: {}", e);
+            warn!("Failed to parse JSON: {}", e);
             return vec![];
         }
     };
 
-    // Navigate to the "prefetch.medications.entry" array
+    // Navigate to the "prefetch.medications_stat.entry" array
     let entries = match v.get("prefetch")
-        .and_then(|p| p.get("medications"))
+        .and_then(|p| p.get("medications_stat"))
         .and_then(|m| m.get("entry"))
         .and_then(|e| e.as_array()) {
         Some(array) => array,
         None => {
-            eprintln!("No medications entry array found");
+            warn!("No medications entry array found");
             return vec![];
         }
     };
@@ -56,45 +56,49 @@ fn extract_medications(json_str: &str) -> Vec<String> {
 }
 
 pub async fn manage_hook_data(
-    hook_data: &str, 
+    hook_data: &str,
+    api_url: &str,
 ) -> Result<String, ScrabError> {
 
-    // Extract SMART_API_URL from enviroment
-    let smart_app_uri = env::var("SMART_API_URL").unwrap_or_default();
+    let mut base_url = String::new();
 
-    // let medications = extract_medications(json_str);
-    // for med in medications {
-    //     println!("{}", med);
-    // }
+    if let Ok(parsed_url) = Url::parse(api_url) {
+        // Reconstruct the base URL up to the /v1/ part
+        let path_segments: Vec<&str> = parsed_url.path().split('/').collect();
+        if path_segments.len() >= 2 {
+            // Build the base URL
+            base_url = parsed_url.origin().ascii_serialization();
+            base_url.push_str("/");
+            base_url.push_str(path_segments[1]);
+        }
+    }
 
-    // Convert hook_data to json
-    let response: Value = from_str(hook_data).unwrap_or_default();
-    let empty_vec: Vec<Value> = Vec::new();
+    let smart_app_uri = format!("{}/launch", base_url);
+    info!("Smart App URI: {}", smart_app_uri);
 
-    // Extract medications
-    let medications = response
-        .get("prefetch")
-        .and_then(|prefetch| prefetch.get("medications"))
-        .and_then(|medications| medications.get("entry"))
-        .and_then(|entry| entry.as_array())
-        .unwrap_or(&empty_vec);
+    let medications_stat = extract_medications_stat(hook_data);
+    let mut medications_result = String::new();
+    let mut response: String;
+    
+    for med in medications_stat {
+        medications_result.push_str(&med);
+        medications_result.push_str("\n");
+    }
 
-    // Convert to json string to_string_pretty
-    let medications_value = serde_json::to_string_pretty(&medications).unwrap_or_default();
-    let mut medications_result: String;
-
-    if medications_value != "[]" {
-        warn!("No medications found");
-        medications_result = "".to_string();
-    } else {
-        medications_result = match manage_medication(&medications_value).await {
+    if !medications_result.is_empty() {
+        response = match manage_medication(&medications_result).await {
             Ok(result) => result,
             Err(e) => {
                 error!("Error managing medications: {:?}", e);
-                "".to_string()
+                "The AI model does not want to work. Try again later. ".to_string()
             }
         };
+    } else {
+        info!("No medications found");
+        response = "No medications were found that the patient is currently taking. ".to_string();
     }
+
+    response.push_str("\n\nClick the button if you want a more detailed report of the patient's medications.");
 
     let body = json!({ 
         "cards": [
@@ -104,25 +108,12 @@ pub async fn manage_hook_data(
                 "source": {
                     "label": "test service"
                 },
-                "detail": medications_result,
+                "detail": &response,
                 "links": [
                     {
-                        "label": "My App",
-                        "url": smart_app_uri,
+                        "label": "MediCompass App",
+                        "url": &smart_app_uri,
                         "type": "smart"
-                    }
-                ]
-            },
-            {
-                "summary": "Some Warning",
-                "indicator": "warning",
-                "source": {
-                    "label": "test service"
-                },
-                "suggestions": [
-                    {
-                        "uuid": "XXX",
-                        "label": "Some suggestion"
                     }
                 ]
             }
