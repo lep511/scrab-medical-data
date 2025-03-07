@@ -16,7 +16,7 @@ MediCompass is an advanced AI-powered application designed to provide personaliz
 
 ## Introduction
 
-MediCompass aims to revolutionize how patients and healthcare providers access and utilize medication information. By integrating with the MeldRX API, the application can access comprehensive FHIR data to provide tailored medication recommendations, enhance treatment adherence, and improve overall healthcare outcomes.
+In the future, MediCompass aims to revolutionize how patients and healthcare providers access and utilize medication information. By integrating with the MeldRX API, the application can access comprehensive FHIR data to provide tailored medication recommendations, enhance treatment adherence, and improve overall healthcare outcomes.
 
 ## Features
 

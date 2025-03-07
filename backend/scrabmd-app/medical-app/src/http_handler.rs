@@ -3,6 +3,7 @@ use lambda_http::tracing::{error, info};
 use crate::libs::manage_hook_data;
 use crate::http_page::get_main_page;
 use serde_json::json;
+use url::Url;
 
 pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     // Extract some useful information from the request
@@ -10,6 +11,16 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     // info!("Body: {:?}", event.body());
     let api_url = event.uri().to_string();
     let path_fm = event.uri().path();
+
+    if extract_uri_path(&api_url) == "launch" {
+        info!("Services path launch");
+        let body = get_main_page("no json data");
+        return Ok(Response::builder()
+            .status(200)
+            .header("content-type", "text/html")
+            .body(body.into())
+            .map_err(Box::new)?);
+    }
     
     let path: String = path_fm.rsplitn(3, '/')
         .take(2)
@@ -33,15 +44,6 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         "cds-services/medication" => {
             info!("Services path cds-services-medication");
             body_resp = handle_patient_view(&body_string, &api_url).await;
-        }
-        "launch" => {
-            info!("Services path launch");
-            let body = get_main_page("no json data");
-            return Ok(Response::builder()
-                .status(200)
-                .header("content-type", "text/html")
-                .body(body.into())
-                .map_err(Box::new)?);
         }
         _ => {
             info!("Services path cds-services-0001");
@@ -80,6 +82,7 @@ pub fn handle_discovery() -> String {
                 "description": "Patient medication description",
                 "id": "medication",
                 "prefetch": {
+                    "patient": "Patient/{{context.patientId}}",
                     "medication": "Medication?patient={{context.patientId}}",
                     "medications_stat": "MedicationStatement?patient={{context.patientId}}",
                     "medication_req": "MedicationRequest?patient={{context.patientId}}"
@@ -106,4 +109,28 @@ fn handle_error() -> String {
     });
 
     body.to_string()
+}
+
+fn extract_uri_path(uri: &str) -> String {
+    if let Ok(parsed_url) = Url::parse(uri) {
+        // Get the path part of the URL
+        let path = parsed_url.path();
+        
+        // Extract just the last path segment
+        if let Some(last_segment) = path.split('/').last() {
+            if !last_segment.is_empty() {
+                println!("Path: /{}", last_segment);
+                return last_segment.to_string();
+            } else {
+                // If the last segment is empty (URL ends with a slash)
+                // Get the previous one
+                let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+                if let Some(segment) = segments.last() {
+                    println!("Path: /{}", segment);
+                    return segment.to_string();
+                }
+            }
+        }
+    }
+    return "".to_string();
 }
