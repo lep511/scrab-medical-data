@@ -14,15 +14,15 @@
             "link":[
                 {
                     "relation":"self",
-                    "url":"https://app.meldrx.com/api/fhir/9b48a00d-56a8-4cb5-a420-24e918bb5aea/bundle/page/1?token=2bafaf00-6895-4612-95cd-85846b425ac5"
+                    "url":"https://app.meldrx.com/api/fhir/9b48a00d-56a8-4cb5-a420-24e918bb5aea/bundle/page/1?token=xxxxx"
                 },
                 {
                     "relation":"first",
-                    "url":"https://app.meldrx.com/api/fhir/9b48a00d-56a8-4cb5-a420-24e918bb5aea/bundle/page/1?token=2bafaf00-6895-4612-95cd-85846b425ac5"
+                    "url":"https://app.meldrx.com/api/fhir/9b48a00d-56a8-4cb5-a420-24e918bb5aea/bundle/page/1?token=xxxxx"
                 },
                 {
                     "relation":"last",
-                    "url":"https://app.meldrx.com/api/fhir/9b48a00d-56a8-4cb5-a420-24e918bb5aea/bundle/page/1?token=2bafaf00-6895-4612-95cd-85846b425ac5"
+                    "url":"https://app.meldrx.com/api/fhir/9b48a00d-56a8-4cb5-a420-24e918bb5aea/bundle/page/1?token=xxxxx"
                 }
             ],
             "entry":[
